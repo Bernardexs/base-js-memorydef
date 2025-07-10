@@ -283,7 +283,7 @@ const encuestaFlow = addKeyword(EVENTS.ACTION)
       despedida: saludos[0]?.saludo3 || '✅ Gracias por participar en la encuesta.'
     });
     
-    await flowDynamic(`✅. Te agradezco de antemano tu respuesta sincera a esta encuesta. Tu opinión es muy valiosa para nosotros y nos ayudará a mejorar continuamente la experiencia de nuestros clientes en la implementación de proyectos de automatización con RPA. Empecemos!`);
+    await flowDynamic(`✅  Empecemos con tu encuesta.`);
     const p0 = preguntas[0];
     let msg = `1⃣ ${p0.pregunta}`;
     if (p0.textoIni && p0.tipoRespuesta === 'RANGO') {
@@ -368,7 +368,7 @@ const encuestaFlow = addKeyword(EVENTS.ACTION)
     try {
       // Guardar respuestas
       await axios.post('http://localhost:7003/guardar-respuestas', payload);
-      //await flowDynamic('📩 Tus respuestas fueron enviadas exitosamente.');
+      await flowDynamic('📩 Tus respuestas fueron enviadas exitosamente.');
 
       // Marcar completada en BD usando los valores de estado
       await axios.post('http://localhost:7003/marcar-como-completada', {

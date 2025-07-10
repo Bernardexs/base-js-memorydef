@@ -368,7 +368,7 @@ const encuestaFlow = addKeyword(EVENTS.ACTION)
     try {
       // Guardar respuestas
       await axios.post('http://localhost:7003/guardar-respuestas', payload);
-      //await flowDynamic('📩 Tus respuestas fueron enviadas exitosamente.');
+      await flowDynamic('📩 Tus respuestas fueron enviadas exitosamente.');
 
       // Marcar completada en BD usando los valores de estado
       await axios.post('http://localhost:7003/marcar-como-completada', {

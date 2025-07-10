@@ -283,7 +283,7 @@ const encuestaFlow = addKeyword(EVENTS.ACTION)
       despedida: saludos[0]?.saludo3 || '✅ Gracias por participar en la encuesta.'
     });
     
-    await flowDynamic(`✅. Te agradezco de antemano tu respuesta sincera a esta encuesta. Tu opinión es muy valiosa para nosotros y nos ayudará a mejorar continuamente la experiencia de nuestros clientes en la implementación de proyectos de automatización con RPA. Empecemos!`);
+    await flowDynamic(`✅ ¡Hola ${usuario.nombre}! Empecemos con tu encuesta.`);
     const p0 = preguntas[0];
     let msg = `1⃣ ${p0.pregunta}`;
     if (p0.textoIni && p0.tipoRespuesta === 'RANGO') {
@@ -309,27 +309,27 @@ const encuestaFlow = addKeyword(EVENTS.ACTION)
     const preguntaActual = preguntas[paso];
     const respuesta      = ctx.body.trim();
 
+    // Validaciones según tipo
    if (preguntaActual.tipoRespuesta === 'RANGO') {
+  // Eliminar espacios dentro de la respuesta
   const respuestaSinEspacios = respuesta.replace(/\s+/g, '');
 
-  // Validar que sea solo dígitos numéricos
-  if (!/^\d+$/.test(respuestaSinEspacios)) {
-    await flowDynamic(`❌ Por favor responde con un número válido entre ${preguntaActual.rangoIni} y ${preguntaActual.rangoFin}.`);
-    return gotoFlow(encuestaFlow);
-  }
-
+  // Convertir la respuesta limpia en número
   const v = parseInt(respuestaSinEspacios, 10);
 
-  if (v < preguntaActual.rangoIni || v > preguntaActual.rangoFin) {
-    await flowDynamic(`❌ Por favor responde con un número válido entre ${preguntaActual.rangoIni} y ${preguntaActual.rangoFin}.`);
+  // Validar que sea un número y esté dentro del rango
+  if (isNaN(v) || v < preguntaActual.rangoIni || v > preguntaActual.rangoFin) {
+    await flowDynamic(`❌ Por favor responde un número entre ${preguntaActual.rangoIni} y ${preguntaActual.rangoFin}.`);
     return gotoFlow(encuestaFlow);
   }
-} else if (preguntaActual.tipoRespuesta === 'CONFIRMA') {
-  if (!['SI', 'NO', 'SÍ'].includes(respuesta.toUpperCase())) {
-    await flowDynamic('❌ Responde solo con "SI" o "NO".');
-    return gotoFlow(encuestaFlow);
-  }
-}
+
+
+    } else if (preguntaActual.tipoRespuesta === 'CONFIRMA') {
+      if (!['SI','NO','SÍ'].includes(respuesta.toUpperCase())) {
+        await flowDynamic('❌ Responde solo con "SI" o "NO".');
+        return gotoFlow(encuestaFlow);
+      }
+    }
 
     // Guardar y avanzar
     respuestas.push(respuesta);
@@ -368,7 +368,7 @@ const encuestaFlow = addKeyword(EVENTS.ACTION)
     try {
       // Guardar respuestas
       await axios.post('http://localhost:7003/guardar-respuestas', payload);
-      //await flowDynamic('📩 Tus respuestas fueron enviadas exitosamente.');
+      await flowDynamic('📩 Tus respuestas fueron enviadas exitosamente.');
 
       // Marcar completada en BD usando los valores de estado
       await axios.post('http://localhost:7003/marcar-como-completada', {
@@ -402,25 +402,9 @@ const encuestaFlow = addKeyword(EVENTS.ACTION)
    
 
 const negacionFlow = addKeyword(negaciones).addAction(async (ctx, { flowDynamic, state }) => {
-  // Convertir la respuesta a mayúsculas y limpiarla
-  const respuesta = ctx.body.trim().toUpperCase();
-
-  // Si la respuesta contiene una negación clara como "NO", "NO GRACIAS", "NEGADO", etc.
-  const negacionesClaras = ['NO', 'NO GRACIAS', 'NUNCA', 'NEGADO', 'NO DESEARÍA'];
-
-  // Solo aceptar respuestas que sean una de las negaciones claras
-  if (negacionesClaras.includes(respuesta)) {
-    await state.update({ finalizada: true }); // ✅ Marca como finalizada si dice NO
-    await flowDynamic('✅ Gracias por tu tiempo. Si deseas participar en otro momento, estaré disponible.');
-  } else if (respuesta.includes('NO LO SÉ') || respuesta.includes('NO SE')) {
-    // Si la respuesta contiene "NO LO SÉ" o "NO SE", no la tomamos como negación
-    await flowDynamic('❓ Parece que no estás seguro. Por favor, responde con "Sí" o "No".');
-  } else {
-    // Si la respuesta no es ni afirmación ni negación clara, pedimos que se responda correctamente
-    await flowDynamic('⚠ Respuesta no válida. Por favor, responde solo con "Sí" o "No".');
-  }
-});
-
+  await state.update({ finalizada: true }) // ✅ Marca como finalizada si dice NO
+  await flowDynamic('✅ Gracias por tu tiempo. Si deseas participar en otro momento, estaré disponible.')
+})
 
 /*const defaultFlow = addKeyword(afirmaciones)
   .addAction(async (ctx, { state, flowDynamic, gotoFlow }) => {
@@ -457,20 +441,11 @@ const negacionFlow = addKeyword(negaciones).addAction(async (ctx, { flowDynamic,
     // 2) si no, es un "nuevo" Sí: arrancamos encuesta
     return gotoFlow(encuestaFlow);
   })
- .addAnswer(null, { capture: true }, async (ctx, { flowDynamic, gotoFlow }) => {
-    const texto = ctx.body.trim().toUpperCase();
-
-    if (negaciones.includes(texto)) {
-      return gotoFlow(negacionFlow);
-    }
-
-    if (afirmaciones.includes(texto)) {
-      return gotoFlow(encuestaFlow);
-    }
-
-    await flowDynamic('❌ Por favor responde sólo Sí o No.');
-  });
-  
+  .addAnswer(null, { capture: true }, async (ctx, { flowDynamic }) => {
+    // si no es ni SI ni NO limpio no sé qué hacer
+    console.log('adda:', ctx.body);
+    await flowDynamic('Por favor responde sólo Sí o No.');
+  });
 
 
 const main = async () => {
